@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 import 'viewmodels/login_viewmodel.dart';
+import 'viewmodels/dashboard_viewmodel.dart';
 import 'views/login_view.dart';
 
 void main() async {
@@ -19,8 +20,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => LoginViewModel(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LoginViewModel()),
+        ChangeNotifierProvider(create: (_) => DashboardViewModel()),
+      ],
       child: MaterialApp(
         title: 'Ecommerce Kart Dashboard',
         debugShowCheckedModeBanner: false,
