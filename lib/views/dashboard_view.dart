@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/app_user_model.dart';
 import '../models/item_model.dart';
 import '../models/order_model.dart';
 import '../viewmodels/login_viewmodel.dart';
@@ -8,7 +7,7 @@ import '../viewmodels/dashboard_viewmodel.dart';
 import 'login_view.dart';
 
 /// Main dashboard shown after a successful Firebase login.
-/// Displays 3 tabs: Users · Items · Orders — all fetched from Firestore.
+/// Displays 2 tabs: Items · Orders — fetched from Firestore.
 class DashboardView extends StatefulWidget {
   const DashboardView({super.key});
 
@@ -23,8 +22,7 @@ class _DashboardViewState extends State<DashboardView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    // Trigger fetch after first frame
+    _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DashboardViewModel>().loadAll();
     });
@@ -36,9 +34,7 @@ class _DashboardViewState extends State<DashboardView>
     super.dispose();
   }
 
-  // ── Colors ─────────────────────────────────────────────────────────────────
   static const _purple = Color(0xFF6C63FF);
-  static const _darkText = Color(0xFF2D2D3A);
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +61,7 @@ class _DashboardViewState extends State<DashboardView>
                 ? null
                 : dashVm.refresh,
           ),
-          // User avatar + email
+          // Logged-in user
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
@@ -110,10 +106,6 @@ class _DashboardViewState extends State<DashboardView>
           unselectedLabelColor: Colors.white54,
           tabs: [
             Tab(
-              icon: const Icon(Icons.people_rounded),
-              text: 'Users (${dashVm.totalUsers})',
-            ),
-            Tab(
               icon: const Icon(Icons.inventory_2_rounded),
               text: 'Items (${dashVm.totalItems})',
             ),
@@ -126,13 +118,8 @@ class _DashboardViewState extends State<DashboardView>
       ),
       body: Column(
         children: [
-          // ── Summary cards ───────────────────────────────────────────────────
           _SummaryBar(vm: dashVm),
-
-          // ── Tab views ───────────────────────────────────────────────────────
-          Expanded(
-            child: _buildBody(dashVm),
-          ),
+          Expanded(child: _buildBody(dashVm)),
         ],
       ),
     );
@@ -153,8 +140,12 @@ class _DashboardViewState extends State<DashboardView>
             children: [
               const Icon(Icons.error_outline, color: Colors.red, size: 48),
               const SizedBox(height: 12),
-              Text(vm.errorMessage,
-                  style: const TextStyle(color: Colors.red)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(vm.errorMessage,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.red)),
+              ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: vm.refresh,
@@ -169,7 +160,6 @@ class _DashboardViewState extends State<DashboardView>
         return TabBarView(
           controller: _tabController,
           children: [
-            _UsersTab(users: vm.users),
             _ItemsTab(items: vm.items),
             _OrdersTab(orders: vm.orders),
           ],
@@ -186,7 +176,7 @@ class _DashboardViewState extends State<DashboardView>
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Summary bar — 4 stat cards
+// Summary bar — 3 stat cards (Items · Orders · Revenue)
 // ──────────────────────────────────────────────────────────────────────────────
 
 class _SummaryBar extends StatelessWidget {
@@ -201,25 +191,23 @@ class _SummaryBar extends StatelessWidget {
       child: Row(
         children: [
           _StatCard(
-              label: 'Users',
-              value: '${vm.totalUsers}',
-              icon: Icons.people_rounded,
-              color: const Color(0xFF6C63FF)),
+            label: 'Total Items',
+            value: '${vm.totalItems}',
+            icon: Icons.inventory_2_rounded,
+            color: const Color(0xFF48CAE4),
+          ),
           _StatCard(
-              label: 'Items',
-              value: '${vm.totalItems}',
-              icon: Icons.inventory_2_rounded,
-              color: const Color(0xFF48CAE4)),
+            label: 'Total Orders',
+            value: '${vm.totalOrders}',
+            icon: Icons.receipt_long_rounded,
+            color: const Color(0xFFFF6584),
+          ),
           _StatCard(
-              label: 'Orders',
-              value: '${vm.totalOrders}',
-              icon: Icons.receipt_long_rounded,
-              color: const Color(0xFFFF6584)),
-          _StatCard(
-              label: 'Revenue',
-              value: '\$${vm.totalRevenue.toStringAsFixed(0)}',
-              icon: Icons.attach_money_rounded,
-              color: const Color(0xFF43C59E)),
+            label: 'Revenue',
+            value: '\$${vm.totalRevenue.toStringAsFixed(0)}',
+            icon: Icons.attach_money_rounded,
+            color: const Color(0xFF43C59E),
+          ),
         ],
       ),
     );
@@ -232,11 +220,12 @@ class _StatCard extends StatelessWidget {
   final IconData icon;
   final Color color;
 
-  const _StatCard(
-      {required this.label,
-      required this.value,
-      required this.icon,
-      required this.color});
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -244,9 +233,11 @@ class _StatCard extends StatelessWidget {
       child: Card(
         elevation: 2,
         margin: const EdgeInsets.symmetric(horizontal: 6),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+          padding:
+              const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
           child: Row(
             children: [
               Container(
@@ -255,7 +246,7 @@ class _StatCard extends StatelessWidget {
                   color: color.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, color: color, size: 20),
+                child: Icon(icon, color: color, size: 22),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -264,7 +255,7 @@ class _StatCard extends StatelessWidget {
                   children: [
                     Text(value,
                         style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF2D2D3A))),
                     Text(label,
@@ -282,86 +273,7 @@ class _StatCard extends StatelessWidget {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Tab 1 — Users
-// ──────────────────────────────────────────────────────────────────────────────
-
-class _UsersTab extends StatelessWidget {
-  final List<AppUserModel> users;
-  const _UsersTab({required this.users});
-
-  @override
-  Widget build(BuildContext context) {
-    if (users.isEmpty) {
-      return const _EmptyState(
-        icon: Icons.people_outline,
-        message: 'No users found in the `users` collection.',
-      );
-    }
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: users.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (_, i) {
-        final u = users[i];
-        return Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12)),
-          child: ListTile(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            leading: CircleAvatar(
-              backgroundColor: const Color(0xFF6C63FF).withOpacity(0.12),
-              child: Text(
-                _initials(u.displayName),
-                style: const TextStyle(
-                    color: Color(0xFF6C63FF), fontWeight: FontWeight.bold),
-              ),
-            ),
-            title: Text(u.displayName,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text(u.email,
-                style: TextStyle(color: Colors.grey.shade600)),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  u.uid.length > 10
-                      ? '${u.uid.substring(0, 10)}…'
-                      : u.uid,
-                  style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade400,
-                      fontFamily: 'monospace'),
-                ),
-                if (u.createdAt != null)
-                  Text(
-                    _formatDate(u.createdAt!),
-                    style: TextStyle(
-                        fontSize: 11, color: Colors.grey.shade400),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty || parts.first.isEmpty) return '?';
-    if (parts.length == 1) return parts.first[0].toUpperCase();
-    return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
-  }
-
-  String _formatDate(DateTime dt) =>
-      '${dt.day}/${dt.month}/${dt.year}';
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Tab 2 — Items
+// Tab 1 — Items
 // ──────────────────────────────────────────────────────────────────────────────
 
 class _ItemsTab extends StatelessWidget {
@@ -390,15 +302,15 @@ class _ItemsTab extends StatelessWidget {
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: Container(
-              width: 48,
-              height: 48,
+              width: 52,
+              height: 52,
               decoration: BoxDecoration(
                 color: const Color(0xFF48CAE4).withOpacity(0.12),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: item.imageUrl != null
                   ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       child: Image.network(
                         item.imageUrl!,
                         fit: BoxFit.cover,
@@ -412,8 +324,23 @@ class _ItemsTab extends StatelessWidget {
             ),
             title: Text(item.name,
                 style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text(item.category,
-                style: TextStyle(color: Colors.grey.shade600)),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (item.category != '—')
+                  Text(item.category,
+                      style: TextStyle(
+                          color: Colors.grey.shade600, fontSize: 12)),
+                if (item.description != null)
+                  Text(
+                    item.description!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        color: Colors.grey.shade400, fontSize: 11),
+                  ),
+              ],
+            ),
             trailing: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -423,11 +350,12 @@ class _ItemsTab extends StatelessWidget {
                   style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF48CAE4),
-                      fontSize: 15),
+                      fontSize: 16),
                 ),
-                Text('Stock: ${item.stock}',
-                    style: TextStyle(
-                        fontSize: 12, color: Colors.grey.shade500)),
+                if (item.stock > 0)
+                  Text('Stock: ${item.stock}',
+                      style: TextStyle(
+                          fontSize: 11, color: Colors.grey.shade500)),
               ],
             ),
           ),
@@ -438,7 +366,7 @@ class _ItemsTab extends StatelessWidget {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Tab 3 — Orders
+// Tab 2 — Orders
 // ──────────────────────────────────────────────────────────────────────────────
 
 class _OrdersTab extends StatelessWidget {
@@ -474,8 +402,7 @@ class _OrdersTab extends StatelessWidget {
                 color: statusColor.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child:
-                  Icon(Icons.receipt_long_rounded, color: statusColor),
+              child: Icon(Icons.receipt_long_rounded, color: statusColor),
             ),
             title: Row(
               children: [
@@ -554,7 +481,7 @@ class _OrdersTab extends StatelessWidget {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Shared empty state widget
+// Shared empty state
 // ──────────────────────────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
