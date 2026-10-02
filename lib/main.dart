@@ -1,10 +1,16 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'firebase_options.dart';
 import 'viewmodels/login_viewmodel.dart';
 import 'views/login_view.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 
@@ -14,7 +20,6 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      // Provide LoginViewModel at the root so it survives navigation events
       create: (_) => LoginViewModel(),
       child: MaterialApp(
         title: 'Ecommerce Kart Dashboard',
