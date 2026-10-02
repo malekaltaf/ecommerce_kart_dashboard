@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/login_viewmodel.dart';
-import 'dashboard_placeholder_view.dart';
+import 'dashboard_view.dart';
 
 /// View layer for the Login screen.
 /// Reads state from [LoginViewModel] and delegates all logic to it.
@@ -14,26 +14,25 @@ class LoginView extends StatefulWidget {
 
 class _LoginViewState extends State<LoginView> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  // Called when the ViewModel emits LoginState.success
   void _handleSuccess() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const DashboardPlaceholderView()),
+      MaterialPageRoute(builder: (_) => const DashboardView()),
     );
   }
 
   Future<void> _onLoginPressed(LoginViewModel vm) async {
     if (!_formKey.currentState!.validate()) return;
-    await vm.login(_usernameController.text, _passwordController.text);
+    await vm.login(_emailController.text, _passwordController.text);
   }
 
   @override
@@ -42,7 +41,6 @@ class _LoginViewState extends State<LoginView> {
       backgroundColor: const Color(0xFFF5F6FA),
       body: Consumer<LoginViewModel>(
         builder: (context, vm, _) {
-          // Navigate on success (after build)
           if (vm.state == LoginState.success) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _handleSuccess();
@@ -67,7 +65,7 @@ class _LoginViewState extends State<LoginView> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // ── Logo / Icon ─────────────────────────────────
+                          // ── Logo ─────────────────────────────────────────
                           Container(
                             width: 72,
                             height: 72,
@@ -84,7 +82,7 @@ class _LoginViewState extends State<LoginView> {
                           ),
                           const SizedBox(height: 24),
 
-                          // ── Title ────────────────────────────────────────
+                          // ── Title ─────────────────────────────────────────
                           Text(
                             'Ecommerce Kart',
                             style: Theme.of(context)
@@ -105,19 +103,24 @@ class _LoginViewState extends State<LoginView> {
                           ),
                           const SizedBox(height: 32),
 
-                          // ── Username field ────────────────────────────────
+                          // ── Email field ───────────────────────────────────
                           TextFormField(
-                            controller: _usernameController,
+                            controller: _emailController,
                             enabled: vm.state != LoginState.loading,
                             keyboardType: TextInputType.emailAddress,
                             decoration: _inputDecoration(
-                              label: 'Username',
-                              hint: 'Enter your username',
-                              icon: Icons.person_outline,
+                              label: 'Email',
+                              hint: 'Enter your email address',
+                              icon: Icons.email_outlined,
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
-                                return 'Please enter your username.';
+                                return 'Please enter your email.';
+                              }
+                              final emailRegex = RegExp(
+                                  r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                              if (!emailRegex.hasMatch(value.trim())) {
+                                return 'Please enter a valid email address.';
                               }
                               return null;
                             },
@@ -148,14 +151,16 @@ class _LoginViewState extends State<LoginView> {
                               if (value == null || value.trim().isEmpty) {
                                 return 'Please enter your password.';
                               }
+                              if (value.length < 6) {
+                                return 'Password must be at least 6 characters.';
+                              }
                               return null;
                             },
                           ),
-                          const SizedBox(height: 8),
 
                           // ── Error message ─────────────────────────────────
                           if (vm.state == LoginState.error) ...[
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 14),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 10),
@@ -230,17 +235,6 @@ class _LoginViewState extends State<LoginView> {
                                         ),
                                       ),
                               ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // ── Demo hint ─────────────────────────────────────
-                          Text(
-                            'Demo: admin / admin123',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade500,
                             ),
                           ),
                         ],
