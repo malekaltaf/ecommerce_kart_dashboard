@@ -39,11 +39,11 @@ class LoginViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Validates inputs and initiates login.
-  Future<void> login(String username, String password) async {
+  /// Validates inputs and initiates Firebase login.
+  Future<void> login(String email, String password) async {
     // Basic validation
-    if (username.trim().isEmpty || password.trim().isEmpty) {
-      _errorMessage = 'Username and password cannot be empty.';
+    if (email.trim().isEmpty || password.trim().isEmpty) {
+      _errorMessage = 'Email and password cannot be empty.';
       _state = LoginState.error;
       notifyListeners();
       return;
@@ -54,7 +54,7 @@ class LoginViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _user = await _authRepository.login(username.trim(), password.trim());
+      _user = await _authRepository.login(email.trim(), password.trim());
       _state = LoginState.success;
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
@@ -62,6 +62,12 @@ class LoginViewModel extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  /// Signs out the current user and resets state.
+  Future<void> logout() async {
+    await _authRepository.logout();
+    reset();
   }
 
   /// Resets the view model back to its idle state.
