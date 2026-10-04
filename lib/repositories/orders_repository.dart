@@ -10,11 +10,10 @@ class OrdersRepository {
 
   /// Returns all documents from the `orders` collection, newest first.
   Future<List<OrderModel>> fetchAllOrders() async {
-    final snapshot = await _db
-        .collection('orders')
-        .orderBy('createdAt', descending: true)
-        .get();
-    return snapshot.docs.map(OrderModel.fromDoc).toList();
+    final snapshot = await _db.collection('orders').get();
+    final list = snapshot.docs.map(OrderModel.fromDoc).toList();
+    list.sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
+    return list;
   }
 
   /// Returns orders for a specific user.
@@ -22,9 +21,10 @@ class OrdersRepository {
     final snapshot = await _db
         .collection('orders')
         .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
         .get();
-    return snapshot.docs.map(OrderModel.fromDoc).toList();
+    final list = snapshot.docs.map(OrderModel.fromDoc).toList();
+    list.sort((a, b) => (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)));
+    return list;
   }
 
   Future<void> updateOrderStatus(String orderId, String status) async {

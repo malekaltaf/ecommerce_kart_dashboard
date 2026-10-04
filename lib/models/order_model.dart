@@ -28,16 +28,23 @@ class OrderModel {
           '—',
       status: data['status'] as String? ?? 'pending',
       totalAmount:
-          ((data['totalAmount'] ?? data['total'] ?? data['amount'] ?? 0)
+          ((data['totalAmount'] ?? data['total'] ?? data['amount'] ?? data['price'] ?? 0)
                   as num)
               .toDouble(),
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ??
-          (data['created_at'] as Timestamp?)?.toDate(),
+      createdAt: _parseTimestamp(data['createdAt'] ?? data['created_at'] ?? data['timestamp']),
       items: List<Map<String, dynamic>>.from(
         (data['items'] as List<dynamic>? ?? [])
             .map((e) => Map<String, dynamic>.from(e as Map)),
       ),
     );
+  }
+
+  static DateTime? _parseTimestamp(dynamic val) {
+    if (val == null) return null;
+    if (val is Timestamp) return val.toDate();
+    if (val is int) return DateTime.fromMillisecondsSinceEpoch(val);
+    if (val is String) return DateTime.tryParse(val);
+    return null;
   }
 
   String get formattedAmount => '\$${totalAmount.toStringAsFixed(2)}';
