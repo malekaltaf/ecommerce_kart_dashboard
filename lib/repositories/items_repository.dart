@@ -8,9 +8,9 @@ class ItemsRepository {
   ItemsRepository({FirebaseFirestore? db})
       : _db = db ?? FirebaseFirestore.instance;
 
-  final String _collection = 'products';
+  final String _collection = 'ecommerce_items';
 
-  /// Returns all documents from the `products` collection.
+  /// Returns all documents from the `ecommerce_items` collection.
   Future<List<ItemModel>> fetchAllItems() async {
     final snapshot = await _db.collection(_collection).get();
     return snapshot.docs.map(ItemModel.fromDoc).toList();
