@@ -39,7 +39,7 @@ class LoginViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Validates inputs and initiates Firebase login.
+  /// Validates inputs and initiates login.
   Future<void> login(String email, String password) async {
     // Basic validation
     if (email.trim().isEmpty || password.trim().isEmpty) {
