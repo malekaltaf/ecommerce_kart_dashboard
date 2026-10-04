@@ -38,7 +38,6 @@ class _LoginViewState extends State<LoginView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
       body: Consumer<LoginViewModel>(
         builder: (context, vm, _) {
           if (vm.state == LoginState.success) {
@@ -70,8 +69,11 @@ class _LoginViewState extends State<LoginView> {
                             width: 72,
                             height: 72,
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF6C63FF), Color(0xFF48CAE4)],
+                              gradient: LinearGradient(
+                                colors: [
+                                  Theme.of(context).colorScheme.primary,
+                                  Theme.of(context).colorScheme.secondary,
+                                ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
@@ -109,6 +111,7 @@ class _LoginViewState extends State<LoginView> {
                             enabled: vm.state != LoginState.loading,
                             keyboardType: TextInputType.emailAddress,
                             decoration: _inputDecoration(
+                              context,
                               label: 'Email',
                               hint: 'Enter your email address',
                               icon: Icons.email_outlined,
@@ -133,6 +136,7 @@ class _LoginViewState extends State<LoginView> {
                             enabled: vm.state != LoginState.loading,
                             obscureText: vm.obscurePassword,
                             decoration: _inputDecoration(
+                              context,
                               label: 'Password',
                               hint: 'Enter your password',
                               icon: Icons.lock_outline,
@@ -196,10 +200,10 @@ class _LoginViewState extends State<LoginView> {
                             height: 50,
                             child: DecoratedBox(
                               decoration: BoxDecoration(
-                                gradient: const LinearGradient(
+                                gradient: LinearGradient(
                                   colors: [
-                                    Color(0xFF6C63FF),
-                                    Color(0xFF48CAE4)
+                                    Theme.of(context).colorScheme.primary,
+                                    Theme.of(context).colorScheme.secondary,
                                   ],
                                   begin: Alignment.centerLeft,
                                   end: Alignment.centerRight,
@@ -250,7 +254,8 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  InputDecoration _inputDecoration({
+  InputDecoration _inputDecoration(
+    BuildContext context, {
     required String label,
     required String hint,
     required IconData icon,
@@ -258,31 +263,7 @@ class _LoginViewState extends State<LoginView> {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      prefixIcon: Icon(icon, color: const Color(0xFF6C63FF)),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF6C63FF), width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.red.shade400),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.red.shade400, width: 2),
-      ),
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      prefixIcon: Icon(icon, color: Theme.of(context).colorScheme.primary),
     );
   }
 }

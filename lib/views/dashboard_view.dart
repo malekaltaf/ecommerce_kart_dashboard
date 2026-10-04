@@ -50,7 +50,7 @@ class _DashboardViewState extends State<DashboardView>
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
-        backgroundColor: _purple,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         automaticallyImplyLeading: false,
         title: const Text(
           'Ecommerce Kart Dashboard',
@@ -129,8 +129,8 @@ class _DashboardViewState extends State<DashboardView>
       ),
       floatingActionButton: _tabController.index == 0
           ? FloatingActionButton(
-              backgroundColor: _purple,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
               onPressed: () => _showItemForm(context, dashVm),
               child: const Icon(Icons.add),
             )
@@ -142,8 +142,8 @@ class _DashboardViewState extends State<DashboardView>
     switch (vm.state) {
       case DashboardState.loading:
       case DashboardState.idle:
-        return const Center(
-          child: CircularProgressIndicator(color: _purple),
+        return Center(
+          child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
         );
 
       case DashboardState.error:
@@ -238,25 +238,27 @@ class _DashboardViewState extends State<DashboardView>
                     Text(isEdit ? 'Edit Item' : 'Add New Item', 
                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
-                    TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder()), enabled: !isSaving),
+                    TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name'), enabled: !isSaving),
                     const SizedBox(height: 12),
-                    TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()), maxLines: 3, enabled: !isSaving),
+                    TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Description'), maxLines: 3, enabled: !isSaving),
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Expanded(child: TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: 'Quantity', border: OutlineInputBorder()), keyboardType: TextInputType.number, enabled: !isSaving)),
+                        Expanded(child: TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: 'Quantity'), keyboardType: TextInputType.number, enabled: !isSaving)),
                         const SizedBox(width: 12),
-                        Expanded(child: TextField(controller: priceCtrl, decoration: const InputDecoration(labelText: 'Price', border: OutlineInputBorder()), keyboardType: const TextInputType.numberWithOptions(decimal: true), enabled: !isSaving)),
+                        Expanded(child: TextField(controller: priceCtrl, decoration: const InputDecoration(labelText: 'Price'), keyboardType: const TextInputType.numberWithOptions(decimal: true), enabled: !isSaving)),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    TextField(controller: imageCtrl, decoration: const InputDecoration(labelText: 'Image URL', border: OutlineInputBorder()), enabled: !isSaving),
+                    TextField(controller: imageCtrl, decoration: const InputDecoration(labelText: 'Image URL'), enabled: !isSaving),
                     const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
-                      height: 48,
                       child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: _purple, foregroundColor: Colors.white),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(ctx).colorScheme.primary, 
+                          foregroundColor: Theme.of(ctx).colorScheme.onPrimary,
+                        ),
                         onPressed: isSaving ? null : () async {
                           final name = nameCtrl.text.trim();
                           final desc = descCtrl.text.trim();
