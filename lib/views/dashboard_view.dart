@@ -39,8 +39,6 @@ class _DashboardViewState extends State<DashboardView>
     super.dispose();
   }
 
-  static const _purple = Color(0xFF6C63FF);
-
   @override
   Widget build(BuildContext context) {
     final loginVm = context.watch<LoginViewModel>();
@@ -196,7 +194,10 @@ class _DashboardViewState extends State<DashboardView>
                 );
               },
             ),
-            _OrdersTab(orders: vm.orders),
+            _OrdersTab(
+              orders: vm.orders,
+              onUpdateStatus: vm.updateOrderStatus,
+            ),
           ],
         );
     }
@@ -522,7 +523,12 @@ class _ItemsTab extends StatelessWidget {
 
 class _OrdersTab extends StatelessWidget {
   final List<OrderModel> orders;
-  const _OrdersTab({required this.orders});
+  final void Function(String id, String status) onUpdateStatus;
+
+  const _OrdersTab({
+    required this.orders,
+    required this.onUpdateStatus,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -543,67 +549,97 @@ class _OrdersTab extends StatelessWidget {
           elevation: 2,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12)),
-          child: ListTile(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            leading: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(Icons.receipt_long_rounded, color: statusColor),
-            ),
-            title: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Order #${order.id.length > 8 ? order.id.substring(0, 8) : order.id}',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+          child: Column(
+            children: [
+              ListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                leading: Container(
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
-                    order.statusLabel,
-                    style: TextStyle(
-                        color: statusColor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600),
+                  child: Icon(Icons.receipt_long_rounded, color: statusColor),
+                ),
+                title: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Order #${order.id.length > 8 ? order.id.substring(0, 8) : order.id}',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        order.statusLabel,
+                        style: TextStyle(
+                            color: statusColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 4),
+                    Text(
+                      'User: ${order.userId.length > 16 ? '${order.userId.substring(0, 16)}…' : order.userId}',
+                      style: TextStyle(
+                          fontSize: 12, color: Colors.grey.shade500),
+                    ),
+                    if (order.createdAt != null)
+                      Text(
+                        _formatDate(order.createdAt!),
+                        style: TextStyle(
+                            fontSize: 12, color: Colors.grey.shade500),
+                      ),
+                  ],
+                ),
+                trailing: Text(
+                  order.formattedAmount,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Color(0xFF43C59E)),
+                ),
+              ),
+              if (order.status.toLowerCase() == 'pending') ...[
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => onUpdateStatus(order.id, 'rejected'),
+                        child: const Text('Reject', style: TextStyle(color: Colors.red)),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          minimumSize: const Size(0, 36),
+                        ),
+                        onPressed: () => onUpdateStatus(order.id, 'approved'),
+                        child: const Text('Approve'),
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Text(
-                  'User: ${order.userId.length > 16 ? '${order.userId.substring(0, 16)}…' : order.userId}',
-                  style: TextStyle(
-                      fontSize: 12, color: Colors.grey.shade500),
-                ),
-                if (order.createdAt != null)
-                  Text(
-                    _formatDate(order.createdAt!),
-                    style: TextStyle(
-                        fontSize: 12, color: Colors.grey.shade500),
-                  ),
-              ],
-            ),
-            trailing: Text(
-              order.formattedAmount,
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Color(0xFF43C59E)),
-            ),
+            ],
           ),
         );
       },
@@ -614,11 +650,13 @@ class _OrdersTab extends StatelessWidget {
     switch (status.toLowerCase()) {
       case 'completed':
       case 'delivered':
+      case 'approved':
         return const Color(0xFF43C59E);
       case 'pending':
         return const Color(0xFFFFA500);
       case 'cancelled':
       case 'canceled':
+      case 'rejected':
         return Colors.red;
       case 'processing':
         return const Color(0xFF48CAE4);

@@ -102,5 +102,14 @@ class DashboardViewModel extends ChangeNotifier {
     await _itemsRepo.deleteItem(id);
     await loadAll();
   }
+
+  // ---------------------------------------------------------------------------
+  // Order CRUD
+  // ---------------------------------------------------------------------------
+
+  Future<void> updateOrderStatus(String id, String status) async {
+    await _ordersRepo.updateOrderStatus(id, status);
+    await loadAll();
+  }
 }
 

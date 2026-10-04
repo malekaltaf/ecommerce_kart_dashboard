@@ -16,4 +16,10 @@ class OrdersRepository {
         .get();
     return snapshot.docs.map(OrderModel.fromDoc).toList();
   }
+
+  Future<void> updateOrderStatus(String orderId, String status) async {
+    await _db.collection('orders').doc(orderId).update({
+      'status': status,
+    });
+  }
 }
