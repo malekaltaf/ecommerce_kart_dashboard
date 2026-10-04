@@ -17,6 +17,16 @@ class OrdersRepository {
     return snapshot.docs.map(OrderModel.fromDoc).toList();
   }
 
+  /// Returns orders for a specific user.
+  Future<List<OrderModel>> fetchUserOrders(String userId) async {
+    final snapshot = await _db
+        .collection('orders')
+        .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .get();
+    return snapshot.docs.map(OrderModel.fromDoc).toList();
+  }
+
   Future<void> updateOrderStatus(String orderId, String status) async {
     await _db.collection('orders').doc(orderId).update({
       'status': status,

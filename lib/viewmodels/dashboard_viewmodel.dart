@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/user_model.dart';
 import '../models/item_model.dart';
 import '../models/order_model.dart';
 import '../repositories/items_repository.dart';
@@ -45,6 +46,13 @@ class DashboardViewModel extends ChangeNotifier {
   // Actions
   // ---------------------------------------------------------------------------
 
+  UserModel? _currentUser;
+  
+  void initialize(UserModel user) {
+    _currentUser = user;
+    loadAll();
+  }
+
   /// Fetches both collections concurrently.
   Future<void> loadAll() async {
     _state = DashboardState.loading;
@@ -52,10 +60,12 @@ class DashboardViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final results = await Future.wait([
-        _itemsRepo.fetchAllItems(),
-        _ordersRepo.fetchAllOrders(),
-      ]);
+      final itemsFuture = _itemsRepo.fetchAllItems();
+      final ordersFuture = (_currentUser?.userrole == 'admin') 
+          ? _ordersRepo.fetchAllOrders()
+          : (_currentUser != null ? _ordersRepo.fetchUserOrders(_currentUser!.uid) : _ordersRepo.fetchAllOrders());
+
+      final results = await Future.wait([itemsFuture, ordersFuture]);
 
       _items = results[0] as List<ItemModel>;
       _orders = results[1] as List<OrderModel>;

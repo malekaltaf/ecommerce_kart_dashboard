@@ -29,7 +29,12 @@ class _DashboardViewState extends State<DashboardView>
       }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<DashboardViewModel>().loadAll();
+      final user = context.read<LoginViewModel>().user;
+      if (user != null) {
+        context.read<DashboardViewModel>().initialize(user);
+      } else {
+        context.read<DashboardViewModel>().loadAll();
+      }
     });
   }
 
