@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/item_model.dart';
 import '../models/order_model.dart';
 import '../repositories/items_repository.dart';
@@ -69,4 +70,37 @@ class DashboardViewModel extends ChangeNotifier {
 
   /// Refreshes all data.
   Future<void> refresh() => loadAll();
+
+  // ---------------------------------------------------------------------------
+  // Item CRUD
+  // ---------------------------------------------------------------------------
+
+  Future<void> addItem(String name, String description, int stock, String imageUrl, double price) async {
+    await _itemsRepo.addItem({
+      'name': name,
+      'description': description,
+      'stock': stock,
+      'imageUrl': imageUrl,
+      'price': price,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    await loadAll();
+  }
+
+  Future<void> updateItem(String id, String name, String description, int stock, String imageUrl, double price) async {
+    await _itemsRepo.updateItem(id, {
+      'name': name,
+      'description': description,
+      'stock': stock,
+      'imageUrl': imageUrl,
+      'price': price,
+    });
+    await loadAll();
+  }
+
+  Future<void> deleteItem(String id) async {
+    await _itemsRepo.deleteItem(id);
+    await loadAll();
+  }
 }
+

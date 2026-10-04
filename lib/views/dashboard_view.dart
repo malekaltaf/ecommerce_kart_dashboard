@@ -23,6 +23,11 @@ class _DashboardViewState extends State<DashboardView>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging || _tabController.index == 0 || _tabController.index == 1) {
+        setState(() {}); // Rebuild for FAB visibility
+      }
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<DashboardViewModel>().loadAll();
     });
@@ -122,6 +127,14 @@ class _DashboardViewState extends State<DashboardView>
           Expanded(child: _buildBody(dashVm)),
         ],
       ),
+      floatingActionButton: _tabController.index == 0
+          ? FloatingActionButton(
+              backgroundColor: _purple,
+              foregroundColor: Colors.white,
+              onPressed: () => _showItemForm(context, dashVm),
+              child: const Icon(Icons.add),
+            )
+          : null,
     );
   }
 
@@ -160,7 +173,29 @@ class _DashboardViewState extends State<DashboardView>
         return TabBarView(
           controller: _tabController,
           children: [
-            _ItemsTab(items: vm.items),
+            _ItemsTab(
+              items: vm.items,
+              onEdit: (item) => _showItemForm(context, vm, item),
+              onDelete: (id) {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Delete Item'),
+                    content: const Text('Are you sure you want to delete this item?'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                      TextButton(
+                        onPressed: () {
+                          vm.deleteItem(id);
+                          Navigator.pop(ctx);
+                        }, 
+                        child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
             _OrdersTab(orders: vm.orders),
           ],
         );
@@ -172,6 +207,78 @@ class _DashboardViewState extends State<DashboardView>
     if (parts.isEmpty || parts.first.isEmpty) return '?';
     if (parts.length == 1) return parts.first[0].toUpperCase();
     return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+  }
+
+  void _showItemForm(BuildContext context, DashboardViewModel vm, [ItemModel? item]) {
+    final isEdit = item != null;
+    final nameCtrl = TextEditingController(text: item?.name);
+    final descCtrl = TextEditingController(text: item?.description);
+    final qtyCtrl = TextEditingController(text: item?.stock.toString());
+    final priceCtrl = TextEditingController(text: item?.price.toString());
+    final imageCtrl = TextEditingController(text: item?.imageUrl);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 20, right: 20, top: 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(isEdit ? 'Edit Item' : 'Add New Item', 
+                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder())),
+                const SizedBox(height: 12),
+                TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()), maxLines: 3),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(child: TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: 'Quantity', border: OutlineInputBorder()), keyboardType: TextInputType.number)),
+                    const SizedBox(width: 12),
+                    Expanded(child: TextField(controller: priceCtrl, decoration: const InputDecoration(labelText: 'Price', border: OutlineInputBorder()), keyboardType: const TextInputType.numberWithOptions(decimal: true))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(controller: imageCtrl, decoration: const InputDecoration(labelText: 'Image URL', border: OutlineInputBorder())),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: _purple, foregroundColor: Colors.white),
+                    onPressed: () async {
+                      final name = nameCtrl.text.trim();
+                      final desc = descCtrl.text.trim();
+                      final qty = int.tryParse(qtyCtrl.text.trim()) ?? 0;
+                      final price = double.tryParse(priceCtrl.text.trim()) ?? 0.0;
+                      final imageUrl = imageCtrl.text.trim();
+
+                      if (name.isEmpty) return;
+
+                      if (isEdit) {
+                        await vm.updateItem(item.id, name, desc, qty, imageUrl, price);
+                      } else {
+                        await vm.addItem(name, desc, qty, imageUrl, price);
+                      }
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    },
+                    child: Text(isEdit ? 'Save Changes' : 'Add Item'),
+                  ),
+                )
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -278,14 +385,21 @@ class _StatCard extends StatelessWidget {
 
 class _ItemsTab extends StatelessWidget {
   final List<ItemModel> items;
-  const _ItemsTab({required this.items});
+  final void Function(ItemModel) onEdit;
+  final void Function(String) onDelete;
+
+  const _ItemsTab({
+    required this.items,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
       return const _EmptyState(
         icon: Icons.inventory_2_outlined,
-        message: 'No items found in the `ecommerce_items` collection.',
+        message: 'No items found in the `products` collection.',
       );
     }
     return ListView.separated(
@@ -308,7 +422,7 @@ class _ItemsTab extends StatelessWidget {
                 color: const Color(0xFF48CAE4).withOpacity(0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: item.imageUrl != null
+              child: item.imageUrl != null && item.imageUrl!.isNotEmpty
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: Image.network(
@@ -331,7 +445,7 @@ class _ItemsTab extends StatelessWidget {
                   Text(item.category,
                       style: TextStyle(
                           color: Colors.grey.shade600, fontSize: 12)),
-                if (item.description != null)
+                if (item.description != null && item.description!.isNotEmpty)
                   Text(
                     item.description!,
                     maxLines: 1,
@@ -341,21 +455,37 @@ class _ItemsTab extends StatelessWidget {
                   ),
               ],
             ),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  '\$${item.price.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF48CAE4),
-                      fontSize: 16),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '\$${item.price.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF48CAE4),
+                          fontSize: 16),
+                    ),
+                    if (item.stock > 0)
+                      Text('Qty: ${item.stock}',
+                          style: TextStyle(
+                              fontSize: 11, color: Colors.grey.shade500)),
+                  ],
                 ),
-                if (item.stock > 0)
-                  Text('Stock: ${item.stock}',
-                      style: TextStyle(
-                          fontSize: 11, color: Colors.grey.shade500)),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.blue),
+                  onPressed: () => onEdit(item),
+                  tooltip: 'Edit',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => onDelete(item.id),
+                  tooltip: 'Delete',
+                ),
               ],
             ),
           ),
