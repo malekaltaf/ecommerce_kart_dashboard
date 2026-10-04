@@ -222,60 +222,79 @@ class _DashboardViewState extends State<DashboardView>
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 20, right: 20, top: 20,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(isEdit ? 'Edit Item' : 'Add New Item', 
-                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder())),
-                const SizedBox(height: 12),
-                TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()), maxLines: 3),
-                const SizedBox(height: 12),
-                Row(
+        bool isSaving = false;
+        return StatefulBuilder(
+          builder: (ctx, setState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20, right: 20, top: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: 'Quantity', border: OutlineInputBorder()), keyboardType: TextInputType.number)),
-                    const SizedBox(width: 12),
-                    Expanded(child: TextField(controller: priceCtrl, decoration: const InputDecoration(labelText: 'Price', border: OutlineInputBorder()), keyboardType: const TextInputType.numberWithOptions(decimal: true))),
+                    Text(isEdit ? 'Edit Item' : 'Add New Item', 
+                         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder()), enabled: !isSaving),
+                    const SizedBox(height: 12),
+                    TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()), maxLines: 3, enabled: !isSaving),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(child: TextField(controller: qtyCtrl, decoration: const InputDecoration(labelText: 'Quantity', border: OutlineInputBorder()), keyboardType: TextInputType.number, enabled: !isSaving)),
+                        const SizedBox(width: 12),
+                        Expanded(child: TextField(controller: priceCtrl, decoration: const InputDecoration(labelText: 'Price', border: OutlineInputBorder()), keyboardType: const TextInputType.numberWithOptions(decimal: true), enabled: !isSaving)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(controller: imageCtrl, decoration: const InputDecoration(labelText: 'Image URL', border: OutlineInputBorder()), enabled: !isSaving),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: _purple, foregroundColor: Colors.white),
+                        onPressed: isSaving ? null : () async {
+                          final name = nameCtrl.text.trim();
+                          final desc = descCtrl.text.trim();
+                          final qty = int.tryParse(qtyCtrl.text.trim()) ?? 0;
+                          final price = double.tryParse(priceCtrl.text.trim()) ?? 0.0;
+                          final imageUrl = imageCtrl.text.trim();
+    
+                          if (name.isEmpty) return;
+    
+                          setState(() => isSaving = true);
+                          
+                          try {
+                            if (isEdit) {
+                              await vm.updateItem(item.id, name, desc, qty, imageUrl, price);
+                            } else {
+                              await vm.addItem(name, desc, qty, imageUrl, price);
+                            }
+                            if (ctx.mounted) Navigator.pop(ctx);
+                          } catch (e) {
+                            // If an error happens (like permission denied), stop loading
+                            if (ctx.mounted) {
+                              setState(() => isSaving = false);
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(content: Text('Error saving: $e')),
+                              );
+                            }
+                          }
+                        },
+                        child: isSaving 
+                            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : Text(isEdit ? 'Save Changes' : 'Add Item'),
+                      ),
+                    )
                   ],
                 ),
-                const SizedBox(height: 12),
-                TextField(controller: imageCtrl, decoration: const InputDecoration(labelText: 'Image URL', border: OutlineInputBorder())),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: _purple, foregroundColor: Colors.white),
-                    onPressed: () async {
-                      final name = nameCtrl.text.trim();
-                      final desc = descCtrl.text.trim();
-                      final qty = int.tryParse(qtyCtrl.text.trim()) ?? 0;
-                      final price = double.tryParse(priceCtrl.text.trim()) ?? 0.0;
-                      final imageUrl = imageCtrl.text.trim();
-
-                      if (name.isEmpty) return;
-
-                      if (isEdit) {
-                        await vm.updateItem(item.id, name, desc, qty, imageUrl, price);
-                      } else {
-                        await vm.addItem(name, desc, qty, imageUrl, price);
-                      }
-                      if (ctx.mounted) Navigator.pop(ctx);
-                    },
-                    child: Text(isEdit ? 'Save Changes' : 'Add Item'),
-                  ),
-                )
-              ],
-            ),
-          ),
+              ),
+            );
+          }
         );
       },
     );
