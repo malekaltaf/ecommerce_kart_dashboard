@@ -46,3 +46,7 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Firebase — contains real API keys; each developer generates their own
+# Run: flutterfire configure  OR fill in lib/firebase_options.dart manually
+lib/firebase_options.dart
